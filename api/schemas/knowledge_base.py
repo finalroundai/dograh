@@ -29,6 +29,10 @@ class ProcessDocumentRequestSchema(BaseModel):
 
     document_uuid: str = Field(..., description="Document UUID to process")
     s3_key: str = Field(..., description="S3 key of the uploaded file")
+    model_configuration_uuid: str | None = Field(
+        default=None,
+        description="Existing named model configuration used for compatible extraction",
+    )
     retrieval_mode: str = Field(
         default="chunked",
         description="Retrieval mode: 'chunked' for vector search or 'full_document' for full text retrieval",

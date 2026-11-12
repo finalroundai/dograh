@@ -181,6 +181,7 @@ async def process_document(
             organization_id=user.selected_organization_id,
             created_by_provider_id=str(user.provider_id),
             retrieval_mode=request.retrieval_mode,
+            model_configuration_uuid=request.model_configuration_uuid,
         )
 
         logger.info(

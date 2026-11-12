@@ -264,9 +264,21 @@ export default function BillingPage() {
                 <div className="flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
                     <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                     <div className="text-sm text-amber-900 dark:text-amber-200">
-                        <p className="font-medium">Credit purchases are unavailable in OSS mode</p>
+                        <p className="font-medium">Use provider-managed models without Dograh credits</p>
                         <p className="mt-1">
-                            You can&apos;t purchase credits from this self-hosted app. Sign up and
+                            Create a{" "}
+                            <Link href="/provider-connections" className="font-medium underline underline-offset-2">
+                                Provider Connection
+                            </Link>
+                            , then create a{" "}
+                            <Link href="/model-configurations" className="font-medium underline underline-offset-2">
+                                Model Configuration
+                            </Link>
+                            {" "}and select it for an agent or as the organization default. Your
+                            configured provider handles its own usage and billing.
+                        </p>
+                        <p className="mt-1">
+                            Credits are required only for Dograh-managed models. To use them, sign up and
                             purchase credits at{" "}
                             <a
                                 href="https://app.dograh.com"
@@ -277,11 +289,12 @@ export default function BillingPage() {
                                 app.dograh.com
                                 <ExternalLink className="h-3 w-3" />
                             </a>
-                            . Then add the generated service key in{" "}
-                            <Link
-                                href="/model-configurations"
-                                className="font-medium underline underline-offset-2"
-                            >
+                            . Then add the generated service key as a Dograh account in{" "}
+                            <Link href="/provider-connections" className="font-medium underline underline-offset-2">
+                                Provider Connections
+                            </Link>
+                            {" "}and select it in{" "}
+                            <Link href="/model-configurations" className="font-medium underline underline-offset-2">
                                 Model Configurations
                             </Link>
                             . Usage for that service key is visible in app.dograh.com.

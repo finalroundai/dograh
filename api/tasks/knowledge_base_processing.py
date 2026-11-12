@@ -14,6 +14,7 @@ from api.db import db_client
 from api.db.models import KnowledgeBaseChunkModel
 from api.services.gen_ai import build_embedding_service
 from api.services.mps_service_key_client import mps_service_key_client
+from api.services.provider_document_processing import process_text_document
 from api.services.storage import storage_fs
 
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
@@ -44,6 +45,7 @@ async def process_knowledge_base_document(
     created_by_provider_id: str,
     max_tokens: int = 128,
     retrieval_mode: str = "chunked",
+    model_configuration_uuid: str | None = None,
 ):
     """Process a knowledge base document via MPS: download, call MPS, embed, store.
 
@@ -173,16 +175,27 @@ async def process_knowledge_base_document(
                     f"model={embeddings_model}"
                 )
 
-        logger.info(f"Delegating document processing to MPS (mode={retrieval_mode})")
-        mps_response = await mps_service_key_client.process_document(
+        mps_response = await process_text_document(
+            organization_id=document.organization_id,
             file_path=temp_file_path,
             filename=filename,
-            content_type=mime_type or "application/octet-stream",
             retrieval_mode=retrieval_mode,
             max_tokens=max_tokens,
-            organization_id=document.organization_id,
-            created_by=created_by_provider_id,
+            model_configuration_uuid=model_configuration_uuid,
         )
+        if mps_response is None:
+            logger.info(
+                f"Delegating document processing to MPS (mode={retrieval_mode})"
+            )
+            mps_response = await mps_service_key_client.process_document(
+                file_path=temp_file_path,
+                filename=filename,
+                content_type=mime_type or "application/octet-stream",
+                retrieval_mode=retrieval_mode,
+                max_tokens=max_tokens,
+                organization_id=document.organization_id,
+                created_by=created_by_provider_id,
+            )
 
         docling_metadata = mps_response.get("docling_metadata", {})
 

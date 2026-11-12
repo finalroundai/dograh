@@ -29,12 +29,15 @@ def test_create_workflow_from_template_mps_unreachable_returns_503():
     client = TestClient(app)
 
     # Mock call_workflow_api to raise RequestError (connection failure)
-    with patch(
-        "api.routes.workflow.mps_service_key_client.call_workflow_api",
-        AsyncMock(
-            side_effect=httpx.ConnectError(
-                "All connection attempts failed",
-            )
+    with (
+        patch("api.routes.workflow.generate_workflow", AsyncMock(return_value=None)),
+        patch(
+            "api.routes.workflow.mps_service_key_client.call_workflow_api",
+            AsyncMock(
+                side_effect=httpx.ConnectError(
+                    "All connection attempts failed",
+                )
+            ),
         ),
     ):
         response = client.post(
@@ -61,14 +64,17 @@ def test_create_workflow_from_template_mps_http_error_preserves_status():
 
     # Mock call_workflow_api to raise HTTPStatusError with 429 (rate limit)
     mock_response = httpx.Response(429, json={"detail": "Rate limit exceeded"})
-    with patch(
-        "api.routes.workflow.mps_service_key_client.call_workflow_api",
-        AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Rate limit exceeded",
-                request=httpx.Request("POST", "http://test"),
-                response=mock_response,
-            )
+    with (
+        patch("api.routes.workflow.generate_workflow", AsyncMock(return_value=None)),
+        patch(
+            "api.routes.workflow.mps_service_key_client.call_workflow_api",
+            AsyncMock(
+                side_effect=httpx.HTTPStatusError(
+                    "Rate limit exceeded",
+                    request=httpx.Request("POST", "http://test"),
+                    response=mock_response,
+                )
+            ),
         ),
     ):
         response = client.post(
@@ -88,9 +94,12 @@ def test_create_workflow_from_template_other_errors_return_500():
     app = _make_test_app()
     client = TestClient(app)
 
-    with patch(
-        "api.routes.workflow.mps_service_key_client.call_workflow_api",
-        AsyncMock(side_effect=ValueError("Unexpected error")),
+    with (
+        patch("api.routes.workflow.generate_workflow", AsyncMock(return_value=None)),
+        patch(
+            "api.routes.workflow.mps_service_key_client.call_workflow_api",
+            AsyncMock(side_effect=ValueError("Unexpected error")),
+        ),
     ):
         response = client.post(
             "/workflow/create/template",

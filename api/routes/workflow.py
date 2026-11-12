@@ -36,6 +36,7 @@ from api.services.configuration.masking import (
 )
 from api.services.mps_service_key_client import mps_service_key_client
 from api.services.posthog_tenant import capture_tenant_event
+from api.services.provider_utility_inference import generate_workflow
 from api.services.reports import generate_workflow_report_csv
 from api.services.storage import storage_fs
 from api.services.workflow.configuration_policy import (
@@ -398,6 +399,7 @@ class CreateWorkflowTemplateRequest(BaseModel):
     call_type: Literal[CallType.INBOUND.value, CallType.OUTBOUND.value]
     use_case: str
     activity_description: str
+    model_configuration_uuid: str | None = None
 
 
 @router.post("/{workflow_id}/validate")
@@ -578,24 +580,34 @@ async def create_workflow_from_template(
     """
     try:
         # Call MPS API to generate workflow using the client
-        if DEPLOYMENT_MODE == "oss":
-            workflow_data = await mps_service_key_client.call_workflow_api(
-                call_type=request.call_type.upper(),
-                use_case=request.use_case,
-                activity_description=request.activity_description,
-                organization_id=user.selected_organization_id,
-                created_by=str(user.provider_id),
-            )
-        else:
-            if not user.selected_organization_id:
-                raise HTTPException(status_code=400, detail="No organization selected")
+        workflow_data = await generate_workflow(
+            organization_id=user.selected_organization_id,
+            call_type=request.call_type,
+            use_case=request.use_case,
+            activity_description=request.activity_description,
+            model_configuration_uuid=request.model_configuration_uuid,
+        )
+        if workflow_data is None:
+            if DEPLOYMENT_MODE == "oss":
+                workflow_data = await mps_service_key_client.call_workflow_api(
+                    call_type=request.call_type.upper(),
+                    use_case=request.use_case,
+                    activity_description=request.activity_description,
+                    organization_id=user.selected_organization_id,
+                    created_by=str(user.provider_id),
+                )
+            else:
+                if not user.selected_organization_id:
+                    raise HTTPException(
+                        status_code=400, detail="No organization selected"
+                    )
 
-            workflow_data = await mps_service_key_client.call_workflow_api(
-                call_type=request.call_type.upper(),
-                use_case=request.use_case,
-                activity_description=request.activity_description,
-                organization_id=user.selected_organization_id,
-            )
+                workflow_data = await mps_service_key_client.call_workflow_api(
+                    call_type=request.call_type.upper(),
+                    use_case=request.use_case,
+                    activity_description=request.activity_description,
+                    organization_id=user.selected_organization_id,
+                )
 
         # Create the workflow in our database
         # Regenerate trigger UUIDs to avoid conflicts with existing triggers

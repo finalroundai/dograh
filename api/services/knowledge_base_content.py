@@ -10,7 +10,6 @@ import os
 import tempfile
 
 import aiofiles
-
 from api.db import db_client
 from api.db.models import KnowledgeBaseDocumentModel
 from api.services.storage import storage_fs
@@ -59,6 +58,7 @@ async def enqueue_document_processing(
     organization_id: int,
     created_by_provider_id: str,
     retrieval_mode: str,
+    model_configuration_uuid: str | None = None,
 ) -> None:
     await enqueue_job(
         FunctionNames.PROCESS_KNOWLEDGE_BASE_DOCUMENT,
@@ -68,6 +68,7 @@ async def enqueue_document_processing(
         created_by_provider_id,
         DEFAULT_CHUNK_MAX_TOKENS,
         retrieval_mode,
+        model_configuration_uuid,
     )
 
 

@@ -120,11 +120,16 @@ describe("billing ledger filters", () => {
         expect(screen.getByRole("link", { name: "Invoices" }).getAttribute("href")).toBe("/billing/invoices");
     });
 
-    it("preserves the OSS credit view without ledger filters", async () => {
+    it("preserves the OSS credit view and offers provider configurations", async () => {
         mocks.config.deploymentMode = "oss";
         render(<BillingPage />);
         await screen.findByText("Credits remaining");
         expect(mocks.getCredits.mock.calls[0][0].query).toEqual({ page: 1, limit: 50 });
         expect(screen.queryByLabelText("Activity")).toBeNull();
+        expect(screen.getByText("Use provider-managed models without Dograh credits")).toBeTruthy();
+        expect(screen.getByRole("link", { name: "Provider Connection" }).getAttribute("href")).toBe("/provider-connections");
+        expect(screen.getByRole("link", { name: "Model Configuration" }).getAttribute("href")).toBe("/model-configurations");
+        expect(screen.getByRole("link", { name: "Provider Connections" }).getAttribute("href")).toBe("/provider-connections");
+        expect(screen.getByRole("link", { name: "Model Configurations" }).getAttribute("href")).toBe("/model-configurations");
     });
 });

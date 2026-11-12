@@ -23,6 +23,9 @@ from api.sdk_expose import sdk_expose
 from api.services.auth.depends import get_user
 from api.services.mps_service_key_client import mps_service_key_client
 from api.services.pipecat.recording_audio_cache import invalidate_recording_cache
+from api.services.provider_utility_inference import (
+    transcribe_audio as configured_transcribe_audio,
+)
 from api.services.storage import storage_fs
 
 router = APIRouter(prefix="/workflow-recordings", tags=["workflow-recordings"])
@@ -313,29 +316,37 @@ async def update_recording(
 async def transcribe_audio(
     file: UploadFile = File(...),
     language: str = Form("en"),
+    model_configuration_uuid: str | None = Form(default=None),
     user=Depends(get_user),
 ):
     """Transcribe an uploaded audio file using MPS STT."""
     try:
         audio_data = await file.read()
 
-        if DEPLOYMENT_MODE == "oss":
-            result = await mps_service_key_client.transcribe_audio(
-                audio_data=audio_data,
-                filename=file.filename or "audio.wav",
-                content_type=file.content_type or "audio/wav",
-                language=language,
-                organization_id=user.selected_organization_id,
-                created_by=str(user.provider_id),
-            )
-        else:
-            result = await mps_service_key_client.transcribe_audio(
-                audio_data=audio_data,
-                filename=file.filename or "audio.wav",
-                content_type=file.content_type or "audio/wav",
-                language=language,
-                organization_id=user.selected_organization_id,
-            )
+        result = await configured_transcribe_audio(
+            organization_id=user.selected_organization_id,
+            audio_data=audio_data,
+            language=language,
+            model_configuration_uuid=model_configuration_uuid,
+        )
+        if result is None:
+            if DEPLOYMENT_MODE == "oss":
+                result = await mps_service_key_client.transcribe_audio(
+                    audio_data=audio_data,
+                    filename=file.filename or "audio.wav",
+                    content_type=file.content_type or "audio/wav",
+                    language=language,
+                    organization_id=user.selected_organization_id,
+                    created_by=str(user.provider_id),
+                )
+            else:
+                result = await mps_service_key_client.transcribe_audio(
+                    audio_data=audio_data,
+                    filename=file.filename or "audio.wav",
+                    content_type=file.content_type or "audio/wav",
+                    language=language,
+                    organization_id=user.selected_organization_id,
+                )
 
         return result
 
